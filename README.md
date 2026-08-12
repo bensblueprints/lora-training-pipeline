@@ -44,7 +44,7 @@ This pipeline solves the hardest problem in AI story-game character generation: 
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    DATASET CREATION (Phase 1)                     │
 │                                                                   │
@@ -417,8 +417,8 @@ ls -lh /home/ben/ComfyUI/output/
 
 ### This Repo
 
-```
-lora-training-pipeline/
+```toml
+[general]ora-training-pipeline/
 ├── README.md                             # You are here
 ├── scripts/
 │   ├── kontext_batch.py                  # FLUX Kontext batch generator
