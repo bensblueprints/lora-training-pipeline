@@ -352,41 +352,40 @@ ls -lh /home/ben/ComfyUI/output/
 
 ## Directory Structure
 
-```
-/home/ben/
-├── ComfyUI/
-│   ├── models/
-│   │   ├── diffusers/
-│   │   │   └── FLUX.1-Kontext-dev/       # 54 GB — FLUX Kontext pipeline
-│   │   ├── diffusion_models/
-│   │   │   └── krea2_turbo_int8_convrot.safetensors  # ~5 GB — Krea 2 int8
-│   │   ├── unet/
-│   │   │   └── flux1-dev.safetensors     # 12 GB — FLUX.1-dev for LoRA inference
-│   │   ├── checkpoints/
-│   │   │   └── Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors  # ~7 GB
-│   │   └── ipadapter/
-│   │       └── ip-adapter-plus_sdxl_vit-h.safetensors
-│   ├── input/
-│   │   └── cast_faces/                   # Reference anchor faces (1 per character)
-│   └── output/
-│       └── lora_kontext/                 # Generated training sets
-│           ├── roxanne_00.png
-│           ├── roxanne_01.png
-│           ├── ...
-│           └── roxanne_19.png
-├── evermore_web/
-│   ├── static/
-│   │   ├── selections.json               # Cast page face selections
-│   │   └── cast.html                     # Character roster + face picker
-│   └── games/                            # 14 game configs
-└── batch_manager.py                      # Web dashboard (:8400)
+### On-Disk (pop-os)
+
+Models live on the 16 TB Synology drive at `/mnt/syno1/models/` — symlinked into ComfyUI so paths don't change.
+
+```text
+/mnt/syno1/models/                        # 16 TB HDD — model storage (8.7 TB free)
+├── FLUX.1-Kontext-dev/                   # 54 GB — FLUX Kontext pipeline
+├── MiniMax-H3/                           # 89 GB — MiniMax H3 video model
+├── FLUX.2-klein-4B/                      # 23 GB — FLUX.2 klein fast image
+├── LTX-2.5/                              # ~40 GB — LTX video model (in progress)
+├── checkpoints/                          # 40 GB — ComfyUI checkpoints
+│   ├── Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors
+│   └── flux1-kontext-dev-fp8-e4m3fn.safetensors
+├── loras/                                # 54 GB — trained LoRA files
+├── diffusion_models/
+│   └── krea2_turbo_int8_convrot.safetensors  # ~5 GB
+└── text_encoders/
+
+/home/ben/ComfyUI/models/                # Symlinks → /mnt/syno1/models/
+/home/ben/ComfyUI/input/
+└── cast_faces/                           # Reference anchor faces (1 per character)
+/home/ben/ComfyUI/output/
+└── lora_kontext/                         # Generated training sets
+    ├── roxanne_00.png
+    └── ...
 ```
 
 ### This Repo
 
-```toml
-[general]ora-training-pipeline/
+```text
+lora-training-pipeline/
 ├── README.md                             # You are here
+├── docs/
+│   └── architecture.svg                  # Pipeline architecture diagram
 ├── scripts/
 │   ├── kontext_batch.py                  # FLUX Kontext batch generator
 │   ├── train_lora_krea2.py               # Krea 2 LoRA training orchestrator
@@ -394,7 +393,7 @@ ls -lh /home/ben/ComfyUI/output/
 │   └── comfyui_queue.py                  # ComfyUI API queue helper
 └── config/
     ├── prompts.json                      # 20 training pose prompts
-    └── lora_config.toml                  # kohya_ss training config
+    └── lora_config.toml                  # Kohya_ss training config
 ```
 
 ---
