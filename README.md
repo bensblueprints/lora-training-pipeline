@@ -44,41 +44,8 @@ This pipeline solves the hardest problem in AI story-game character generation: 
 
 ## Architecture
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    DATASET CREATION (Phase 1)                     │
-│                                                                   │
-│  cast_faces/          FluxKontextPipeline       lora_kontext/     │
-│  ┌─────────┐          ┌──────────────┐         ┌──────────┐      │
-│  │ ref.png │─────────▶│  FLUX Kontext │────────▶│ 00-19.png│      │
-│  │ (anchor)│          │  (bfloat16)   │         │ per char │      │
-│  └─────────┘          │  CPU offload  │         └──────────┘      │
-│                       └──────────────┘                            │
-│                             │                                     │
-│                     3090 24GB VRAM                                │
-│                     peak ~20GB per image                          │
-├───────────────────────────────────────────────────────────────────┤
-│                    QUALITY GATE (Phase 2)                          │
-│                                                                   │
-│  lora_kontext/        ArcFace (buffalo_l)       PASS / FAIL       │
-│  ┌──────────┐         ┌──────────────┐         ┌──────────┐      │
-│  │ 00-19.png│────────▶│ cosine sim   │────────▶│ mean≥0.78│      │
-│  └──────────┘         │ per pair     │         │ min≥0.65 │      │
-│                       └──────────────┘         └──────────┘      │
-├───────────────────────────────────────────────────────────────────┤
-│                    LORA TRAINING (Phase 3)                         │
-│                                                                   │
-│  lora_kontext/        kohya_ss / ai-toolkit    ~/.cache/lora/     │
-│  ┌──────────┐         ┌──────────────┐         ┌──────────┐      │
-│  │ 00-19.png│────────▶│ Krea 2 int8  │────────▶│char.safe │      │
-│  │ + captions│        │ rank 16/α 16 │         │tensors   │      │
-│  └──────────┘         │ 2000 steps   │         └──────────┘      │
-│                       └──────────────┘                            │
-│                     3090: ~45-60min/char                          │
-└───────────────────────────────────────────────────────────────────┘
-```
+![Pipeline Architecture](docs/architecture.svg)
 
----
 
 ## Prerequisites
 
