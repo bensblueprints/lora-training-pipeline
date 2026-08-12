@@ -1,0 +1,7 @@
+# Sample prompts for LoRA training validation
+# One prompt per line — kohya_ss generates a validation image every sample_every_n_steps
+
+portrait of [character], front view, studio lighting, clean background
+portrait of [character], three-quarter profile, window light
+portrait of [character], dramatic Rembrandt lighting, intense stare
+portrait of [character], outdoor setting, natural daylight, candid

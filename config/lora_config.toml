@@ -1,0 +1,71 @@
+# LoRA Training Configuration for Krea 2 Turbo (int8)
+# ⚠️ NOT YET VALIDATED — Krea 2 training is experimental.
+# Test with a single character first.
+
+[model]
+pretrained_model_name_or_path = "/home/ben/ComfyUI/models/diffusion_models/krea2_turbo_int8_convrot.safetensors"
+# vae, clip_l, t5xxl are bundled in the safetensors — keep as empty/unset
+vae = ""
+clip_l = ""
+t5xxl = ""
+
+[network]
+type = "lora"
+rank = 16
+alpha = 16
+module_dropout = 0.0
+conv_rank = 0
+conv_alpha = 0
+train_unet = true
+train_text_encoder = false
+
+[training]
+output_dir = "/home/ben/.cache/lora/krea2/"
+output_name = "character_lora"
+resolution = 768
+batch_size = 1
+max_train_steps = 2000
+learning_rate = 1e-4
+lr_scheduler = "cosine_with_restarts"
+lr_warmup_steps = 100
+lr_scheduler_num_cycles = 2
+optimizer_type = "adamw8bit"
+mixed_precision = "bf16"
+fp8_base = true
+gradient_checkpointing = true
+gradient_accumulation_steps = 4
+save_every_n_steps = 500
+save_precision = "bf16"
+logging_dir = "/home/ben/.cache/lora/krea2/logs/"
+log_with = "tensorboard"
+max_data_loader_n_workers = 2
+persistent_data_loader_workers = true
+clip_skip = 1
+max_token_length = 225
+noise_offset = 0.1
+
+# Memory optimizations for 3090 24GB
+cache_latents = true
+cache_latents_to_disk = true
+cache_text_encoder_outputs = true
+cache_text_encoder_outputs_to_disk = true
+
+# Validation
+sample_every_n_steps = 1000
+sample_prompts = "/home/ben/lora-training-pipeline/config/sample_prompts.txt"
+sample_sampler = "euler_a"
+
+[dataset]
+resolution = 768
+batch_size = 1
+
+[[datasets]]
+resolution = 768
+batch_size = 1
+image_dir = "/home/ben/ComfyUI/output/lora_kontext/"
+caption_extension = ".txt"
+num_repeats = 10
+enable_bucket = true
+bucket_reso_steps = 64
+min_bucket_reso = 512
+max_bucket_reso = 1024

@@ -1,0 +1,105 @@
+{
+  "description": "20 training poses for LoRA dataset generation. Each pose covers a different angle, lighting condition, and expression to ensure robust identity learning.",
+  "prompts": [
+    {
+      "id": 0,
+      "category": "front",
+      "prompt": "keep the person EXACTLY the same, front view facing camera, studio lighting, clean white background"
+    },
+    {
+      "id": 1,
+      "category": "three_quarter_left",
+      "prompt": "keep the person EXACTLY the same, turn head to the LEFT showing three-quarter left profile, window light"
+    },
+    {
+      "id": 2,
+      "category": "three_quarter_right",
+      "prompt": "keep the person EXACTLY the same, turn head to the RIGHT showing three-quarter right profile, even light"
+    },
+    {
+      "id": 3,
+      "category": "profile_left",
+      "prompt": "keep the person EXACTLY the same, pure LEFT side profile, head turned 90 degrees, clean background"
+    },
+    {
+      "id": 4,
+      "category": "profile_right",
+      "prompt": "keep the person EXACTLY the same, pure RIGHT side profile, head turned 90 degrees, clean background"
+    },
+    {
+      "id": 5,
+      "category": "looking_up",
+      "prompt": "keep the person EXACTLY the same, looking UP at ceiling, chin raised, dramatic low angle"
+    },
+    {
+      "id": 6,
+      "category": "looking_down",
+      "prompt": "keep the person EXACTLY the same, looking DOWN at hands, chin tucked, overhead shot"
+    },
+    {
+      "id": 7,
+      "category": "over_shoulder",
+      "prompt": "keep the person EXACTLY the same, over shoulder looking back, candid moment"
+    },
+    {
+      "id": 8,
+      "category": "close_up",
+      "prompt": "keep the person EXACTLY the same, extreme close-up on face, sharp focus on eyes"
+    },
+    {
+      "id": 9,
+      "category": "eyes_closed",
+      "prompt": "keep the person EXACTLY the same, eyes closed peaceful expression, soft diffused light"
+    },
+    {
+      "id": 10,
+      "category": "intense",
+      "prompt": "keep the person EXACTLY the same, serious intense stare, dramatic single shadow, Rembrandt lighting"
+    },
+    {
+      "id": 11,
+      "category": "smile",
+      "prompt": "keep the person EXACTLY the same, slight smile, head tilted slightly left, warm interior light"
+    },
+    {
+      "id": 12,
+      "category": "speaking",
+      "prompt": "keep the person EXACTLY the same, mouth slightly open speaking, animated expression"
+    },
+    {
+      "id": 13,
+      "category": "action",
+      "prompt": "keep the person EXACTLY the same, dynamic action, hair blowing in wind, outdoor setting"
+    },
+    {
+      "id": 14,
+      "category": "leaning",
+      "prompt": "keep the person EXACTLY the same, leaning forward toward camera, engaged expression, professional"
+    },
+    {
+      "id": 15,
+      "category": "half_body",
+      "prompt": "keep the person EXACTLY the same, half-body shot, arms crossed, professional headshot style"
+    },
+    {
+      "id": 16,
+      "category": "thoughtful",
+      "prompt": "keep the person EXACTLY the same, chin resting on hand, thoughtful pose, soft window light"
+    },
+    {
+      "id": 17,
+      "category": "low_angle",
+      "prompt": "keep the person EXACTLY the same, low angle from below, looking down at viewer, powerful stance"
+    },
+    {
+      "id": 18,
+      "category": "high_angle",
+      "prompt": "keep the person EXACTLY the same, high angle from above, looking up at camera, softer expression"
+    },
+    {
+      "id": 19,
+      "category": "skeptical",
+      "prompt": "keep the person EXACTLY the same, head tilted right, skeptical expression, cool blue light"
+    }
+  ]
+}
