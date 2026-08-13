@@ -226,6 +226,7 @@ def main():
             args.model,
             torch_dtype=torch.bfloat16,
             local_files_only=True,
+            disable_mmap=True,
         )
         pipe.enable_sequential_cpu_offload()
         print("Pipeline loaded. Starting generation...")

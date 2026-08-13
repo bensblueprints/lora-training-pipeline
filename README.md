@@ -430,6 +430,7 @@ The 3090 runs at **75-78°C at 100% utilization** during sustained ComfyUI workl
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
+| Generation 10× slow (2–6 min/**step**, GPU idle at ~1%) | diffusers mmaps the model to disk — every denoise step re-reads ~24 GB off a SATA/HDD (disk pinned at ~100% util, hundreds of GB `read_bytes`) | Add `disable_mmap=True` to `from_pretrained()` so weights load into RAM instead of mmap |
 | CUDA OOM at load | Offload not enabled | Add `pipe.enable_sequential_cpu_offload()` |
 | CUDA OOM mid-generation | Ghost processes holding VRAM | Kill stale Python processes: see VRAM cleanup section |
 | Bad face consistency on extreme angles | Kontext struggles with pure 90° profiles | Increase `guidance_scale` to 3.0-3.5 for those prompts |
@@ -453,6 +454,8 @@ The 3090 runs at **75-78°C at 100% utilization** during sustained ComfyUI workl
 | ComfyUI won't start | System libraries missing | See `nighttale-game-dev` skill: references/comfyui-system-deps.md |
 | "KeyError: 'character'" | selections.json wrong format | Verify format: list of `{"character": "...", "img": "..."}` |
 | Images have wrong colors | VAE mismatch (16ch vs 4ch) | FLUX VAE is 16-channel. Don't use SDXL VAE with FLUX models. |
+| Model drive unmounts after reboot | No fstab entry — session-only udisks mount evaporates on power-off | Mount permanently: fstab entry, or a systemd `.mount` unit via `systemctl link`+`enable` (works even with passwordless `systemctl` only) |
+| 5060 Ti BSOD `0x1E` (nvlddmkm.sys) under CUDA training | NVIDIA Blackwell driver bug under sustained compute load | Update to latest driver; if it persists lock GPU to base clock (`nvidia-smi -lgc 0,<base>`), reset with `-rgc` |
 
 ### No-Dumbledore Rule
 
