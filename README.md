@@ -38,7 +38,14 @@ This pipeline solves the hardest problem in AI story-game character generation: 
 | **FLUX.1-Kontext-dev** | Dataset generator | In-context learning preserves face identity across all angles — no LoRA needed for dataset creation |
 | **Krea 2 (int8)** | LoRA base model | Fast inference at int8 precision, purpose-built for character consistency |
 
-**Scale**: 87 characters × 20 images = **1,740 training images**, each at 1024×1024.
+**Two machines, two roles** (revised Aug 2026):
+
+| Machine | GPU | Role | Why |
+|---------|-----|------|-----|
+| **pop-os** | RTX 3090 24GB (**Ampere**) | **LoRA training** | 24GB VRAM required for bf16 training; Ampere has **no fp8 tensor cores** so fp8 must dequantize |
+| **5060 Ti box** | RTX 5060 Ti 16GB (**Blackwell**) | **fp8 inference / dataset generation** | Blackwell has **native fp8 tensor cores** → runs FLUX fp8 natively, faster per-image than the 3090 (16GB is too tight for full LoRA training) |
+
+**Scale**: 87 characters × 20 images = **1,740 training images** (headshots 1024×1024, full-body 832×1248).
 
 ---
 
@@ -50,7 +57,8 @@ This pipeline solves the hardest problem in AI story-game character generation: 
 ## Prerequisites
 
 ### Hardware
-- **GPU**: NVIDIA RTX 3090 24GB (single card — pop-os motherboard only supports one)
+- **GPU (training)**: NVIDIA RTX 3090 24GB on pop-os (single card — pop-os motherboard only supports one)
+- **GPU (inference/generation)**: RTX 5060 Ti 16GB (Blackwell) — native fp8, faster than the 3090 for fp8 FLUX
 - **RAM**: 64GB system RAM recommended (Kontext CPU offload uses ~30GB)
 - **Storage**: ~60GB for FLUX Kontext model, ~10GB for Krea 2, ~5GB for datasets
 
@@ -85,25 +93,32 @@ FLUX Kontext uses **in-context learning** — you give it a reference image of a
 
 ### Installation
 
-```bash
-# Install diffusers with FLUX Kontext support
-uv pip install diffusers transformers accelerate sentencepiece protobuf
-uv pip install pillow torch torchvision --index-url https://download.pytorch.org/whl/cu121
+**⚠️ Use ComfyUI with the fp8 checkpoint — NOT diffusers.** (See ["Why ComfyUI, not diffusers"](#why-comfyui-not-diffusers) below.)
 
-# Download the model (54 GB — run overnight)
-python3 -c "
-from diffusers import FluxKontextPipeline
-pipe = FluxKontextPipeline.from_pretrained(
-    'black-forest-labs/FLUX.1-Kontext-dev',
-    torch_dtype='bfloat16',
-    cache_dir='/home/ben/ComfyUI/models/diffusers/'
-)
-"
+```bash
+# ComfyUI fp8 checkpoint (11.9 GB) + text encoders + VAE
+# diffusion_models/flux1-kontext-dev-fp8-e4m3fn.safetensors
+# clip/clip_l.safetensors  +  clip/t5xxl_fp16.safetensors
+# vae/ae.safetensors
 ```
+
+The production orchestrator is **`/home/ben/batch_comfy.py`** — it drives ComfyUI over HTTP (`127.0.0.1:8188`), generates the 20-pose set per character with resume logic, and bakes the full-body/tall-canvas handling described below. See the `flux-kontext-pose-sets` skill for the exact workflow graph.
+
+### Why ComfyUI, not diffusers (CRITICAL)
+
+The RTX 3090 is **Ampere** — it has **no fp8 tensor cores** (only Ada/Blackwell: 40xx/50xx have them).
+
+- **diffusers fp8** → `mat1 and mat2 must have the same dtype (BFloat16 vs Float8_e4m3fn)` — hard fail.
+- **diffusers bnb int8** → `quantization_config` is **silently ignored** (loads bf16 anyway, OOM).
+- **ComfyUI's fp8 loader dequantizes fp8→fp16 natively on Ampere** — the only path that works on the 3090.
+
+**Speed:** ComfyUI fp8 @ 12 steps = **32s/img** vs diffusers bf16 = **153.7s/img** (~4.8× faster).
+
+**The 5060 Ti (Blackwell) runs FLUX fp8 NATIVELY** — no dequantize penalty, so it's faster still. Use the **3090 for training** (VRAM-bound) and the **5060 Ti for generation** (fp8-speed-bound).
 
 ### Batch Generation Script
 
-The production script at [`scripts/kontext_batch.py`](scripts/kontext_batch.py) generates 20 images per character from a `selections.json` file.
+The production script is **`/home/ben/batch_comfy.py`** (drives ComfyUI over HTTP). It generates 20 images per character from a `selections.json` file.
 
 **Usage:**
 
@@ -126,64 +141,31 @@ python3 scripts/kontext_batch.py
 4. Skips already-generated images (resumable — safe to interrupt)
 5. Saves to `/home/ben/ComfyUI/output/lora_kontext/{character}_{00-19}.png`
 
-**Performance:** ~5 minutes per 1024×1024 image, 28 steps. Full run (87 chars × 20 images = 1,740 images): **~145 hours** on a single 3090.
+**Performance:** ~32s per image @ 12 steps (ComfyUI fp8). Full run (87 chars × 20 images = 1,740 images): **~15 hours** on a single 3090.
 
 ### VRAM Strategy
 
-FluxKontextPipeline on a 3090 requires `enable_sequential_cpu_offload()` — without it, you'll OOM instantly.
-
-```python
-pipe = FluxKontextPipeline.from_pretrained(
-    MODEL, torch_dtype=torch.bfloat16, local_files_only=True
-)
-pipe.enable_sequential_cpu_offload()  # ← THIS is the magic
-```
-
-**How it works:**
-- Each model component (text encoder, VAE, transformer, etc.) is loaded to GPU only when needed
-- Between components, previous ones are offloaded to CPU RAM
-- Peak VRAM: ~20GB during transformer forward pass
-- System RAM needed: ~30GB for offloaded components
+ComfyUI fp8 fits entirely in the 3090's 24GB — **no CPU offload needed** (the old diffusers path required `enable_sequential_cpu_offload()` and OOM'd without it). Peak VRAM: ~22.7 GB during generation.
 
 **Before starting, free VRAM:**
 ```bash
-# Kill any competing GPU processes
 pkill -9 -f "VLLM|vllm|EngineCore"
 pkill -9 -f "ComfyUI"
-nvidia-smi | grep python | awk '{print $5}' | xargs -r kill -9
-
-# Verify: should show ~1.5GB used (driver overhead)
-nvidia-smi --query-gpu=memory.used --format=csv,noheader
+nvidia-smi --query-gpu=memory.used --format=csv,noheader   # should show ~1.5GB used
 ```
 
 ### The 20-Pose Training Set
 
-Each character gets 20 images covering the full pose matrix needed for a robust LoRA:
+Each character gets **20 images**: **12 tight headshots** (neck-up) + **8 full-body shots** (tall 832×1248 canvas, genre outfit).
 
-| # | Pose | Lighting | Composition |
-|---|------|----------|-------------|
-| 0 | Front view, facing camera | Studio, clean white bg | Headshot |
-| 1 | Three-quarter LEFT profile | Window light | Headshot |
-| 2 | Three-quarter RIGHT profile | Even light | Headshot |
-| 3 | Pure LEFT side profile | Clean background | Headshot |
-| 4 | Pure RIGHT side profile | Clean background | Headshot |
-| 5 | Looking UP at ceiling | Dramatic low angle | Headshot |
-| 6 | Looking DOWN at hands | Overhead shot | Headshot |
-| 7 | Over shoulder, looking back | Candid | Upper body |
-| 8 | Extreme close-up on face | Sharp focus on eyes | Close-up |
-| 9 | Eyes closed, peaceful | Soft diffused light | Headshot |
-| 10 | Serious intense stare | Rembrandt (single shadow) | Headshot |
-| 11 | Slight smile, head tilted left | Warm interior | Headshot |
-| 12 | Mouth open, speaking | Animated expression | Headshot |
-| 13 | Dynamic action, hair in wind | Outdoor | Upper body |
-| 14 | Leaning forward, engaged | Professional | Upper body |
-| 15 | Half-body, arms crossed | Professional headshot | Half-body |
-| 16 | Chin on hand, thoughtful | Soft window light | Headshot |
-| 17 | Low angle, looking down at viewer | Powerful stance | Headshot |
-| 18 | High angle, looking up at camera | Softer expression | Headshot |
-| 19 | Head tilted right, skeptical | Cool blue light | Headshot |
+**Hard rules (learned the hard way):**
+- **NO hands** — FLUX renders hands badly and identity training doesn't need them. Never use hand-involving poses (looking-down-at-hands, arms-crossed, chin-on-hand); bake "hands out of frame" into every prompt.
+- **NO wind/hair changes** — hair is identity; "blowing in wind" alters it and breaks consistency. Use "hair unchanged".
+- **Tight headshots** for face identity — `preserve the FACE IDENTICALLY` (not "keep the person EXACTLY the same", which glitches accessories).
+- **Full-body on a TALL canvas** — a square 1024×1024 + face-only reference produces "midget" shots (giant head, stunted body). Fix: **832×1248 canvas + composite the face small (~35% width) at the top** so the model builds the body beneath it (`make_fullbody_ref()` in `batch_comfy.py`).
+- **Genre outfit** for full-body consistency (biker leather, pirate coat, knight armor…) via a `{OUTFIT}` placeholder mapped from the game.
 
-**Why these 20:** The combination of all cardinal directions + expressions + lighting conditions ensures the LoRA learns the character's face geometry, not just the lighting in the reference image.
+**Why this split:** headshots teach face geometry; full-body teaches body/outfit. Together they prevent the LoRA from learning just the reference image's lighting.
 
 ---
 
@@ -226,6 +208,16 @@ def verify_identity(image_paths):
 ```
 
 **If it fails:** Regenerate the specific poses that are outliers. Usually they're extreme angles (pure profile, looking up/down) where Kontext struggles.
+
+### Artifact QC (complement to ArcFace)
+
+ArcFace verifies *identity* (same person), but not *quality* — it won't catch mangled hands, hair artifacts, or face glitches. Run the **Qwen2.5-VL-7B** artifact gate for that:
+
+```bash
+/home/ben/clip_audit/qc_lora.py   # flags hands/hair/face/artifacts → lora_qc_report.json
+```
+
+It's VRAM-gated (waits for the FLUX batch to finish) and resume-safe. A character's 20 images must pass **both** gates: ArcFace (`mean ≥ 0.78`, `min ≥ 0.65`) AND zero `usable:false` artifacts.
 
 ---
 
@@ -471,7 +463,7 @@ All measurements on **RTX 3090 24GB**, pop-os Linux, CUDA 12.1.
 
 | Method | Time/Image | Quality | VRAM Peak |
 |--------|------------|---------|-----------|
-| **FLUX Kontext** | ~5 min | ⭐⭐⭐⭐⭐ | ~20 GB |
+| **FLUX Kontext (ComfyUI fp8)** | ~32 sec | ⭐⭐⭐⭐⭐ | ~22.7 GB |
 | IP-Adapter + Juggernaut XL | ~25 sec | ⭐⭐⭐ | ~8 GB |
 | FLUX.2-klein (4B) | ~9 sec | ⭐⭐⭐ | 8.4 GB |
 
@@ -486,9 +478,9 @@ All measurements on **RTX 3090 24GB**, pop-os Linux, CUDA 12.1.
 
 | Scale | Characters | Images | Generation | ArcFace | Training | **Total** |
 |-------|-----------|--------|------------|---------|----------|-----------|
-| Small test | 1 | 20 | 1.7 hrs | 30 sec | 1 hr | **~3 hrs** |
-| One game | 6 | 120 | 10 hrs | 3 min | 6 hrs | **~16 hrs** |
-| Full roster | 87 | 1,740 | 145 hrs | 45 min | 72 hrs | **~217 hrs (~9 days)** |
+| Small test | 1 | 20 | ~11 min | 30 sec | 1 hr | **~1.3 hrs** |
+| One game | 6 | 120 | ~1.1 hrs | 3 min | 6 hrs | **~7 hrs** |
+| Full roster | 87 | 1,740 | 15 hrs | 45 min | 72 hrs | **~88 hrs (~3.7 days)** |
 
 **Pipeline is fully resumable** — images and checkpoints are saved incrementally. Interrupt at any point and resume without data loss.
 
