@@ -379,12 +379,14 @@ lora-training-pipeline/
 ├── docs/
 │   └── architecture.svg                  # Pipeline architecture diagram
 ├── scripts/
-│   ├── kontext_batch.py                  # FLUX Kontext batch generator
+│   ├── batch_comfy.py                    # FLUX Kontext batch generator (ComfyUI fp8 — production)
+│   ├── qc_lora.py                        # Qwen2.5-VL artifact QC (hands/hair/face)
 │   ├── train_lora_krea2.py               # Krea 2 LoRA training orchestrator
-│   ├── arcface_verify.py                 # Identity verification gate
-│   └── comfyui_queue.py                  # ComfyUI API queue helper
+│   ├── arcface_verify.py                 # ArcFace identity verification gate
+│   ├── comfyui_queue.py                  # ComfyUI API queue helper
+│   └── kontext_batch.py                  # DEPRECATED — old diffusers path (fails on Ampere)
 └── config/
-    ├── prompts.json                      # 20 training pose prompts
+    ├── prompts.json                      # 20 training pose prompts (12 headshots + 8 full-body)
     └── lora_config.toml                  # Kohya_ss training config
 ```
 

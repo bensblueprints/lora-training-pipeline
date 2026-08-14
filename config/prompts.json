@@ -1,105 +1,25 @@
 {
-  "description": "20 training poses for LoRA dataset generation. Each pose covers a different angle, lighting condition, and expression to ensure robust identity learning.",
+  "description": "20 training poses for LoRA dataset generation — 12 tight headshots (neck-up, hands out of frame) + 8 full-body shots (tall 832x1248 canvas, {OUTFIT} placeholder). Generated via ComfyUI fp8 (scripts/batch_comfy.py), not diffusers.",
   "prompts": [
-    {
-      "id": 0,
-      "category": "front",
-      "prompt": "keep the person EXACTLY the same, front view facing camera, studio lighting, clean white background"
-    },
-    {
-      "id": 1,
-      "category": "three_quarter_left",
-      "prompt": "keep the person EXACTLY the same, turn head to the LEFT showing three-quarter left profile, window light"
-    },
-    {
-      "id": 2,
-      "category": "three_quarter_right",
-      "prompt": "keep the person EXACTLY the same, turn head to the RIGHT showing three-quarter right profile, even light"
-    },
-    {
-      "id": 3,
-      "category": "profile_left",
-      "prompt": "keep the person EXACTLY the same, pure LEFT side profile, head turned 90 degrees, clean background"
-    },
-    {
-      "id": 4,
-      "category": "profile_right",
-      "prompt": "keep the person EXACTLY the same, pure RIGHT side profile, head turned 90 degrees, clean background"
-    },
-    {
-      "id": 5,
-      "category": "looking_up",
-      "prompt": "keep the person EXACTLY the same, looking UP at ceiling, chin raised, dramatic low angle"
-    },
-    {
-      "id": 6,
-      "category": "looking_down",
-      "prompt": "keep the person EXACTLY the same, looking DOWN at hands, chin tucked, overhead shot"
-    },
-    {
-      "id": 7,
-      "category": "over_shoulder",
-      "prompt": "keep the person EXACTLY the same, over shoulder looking back, candid moment"
-    },
-    {
-      "id": 8,
-      "category": "close_up",
-      "prompt": "keep the person EXACTLY the same, extreme close-up on face, sharp focus on eyes"
-    },
-    {
-      "id": 9,
-      "category": "eyes_closed",
-      "prompt": "keep the person EXACTLY the same, eyes closed peaceful expression, soft diffused light"
-    },
-    {
-      "id": 10,
-      "category": "intense",
-      "prompt": "keep the person EXACTLY the same, serious intense stare, dramatic single shadow, Rembrandt lighting"
-    },
-    {
-      "id": 11,
-      "category": "smile",
-      "prompt": "keep the person EXACTLY the same, slight smile, head tilted slightly left, warm interior light"
-    },
-    {
-      "id": 12,
-      "category": "speaking",
-      "prompt": "keep the person EXACTLY the same, mouth slightly open speaking, animated expression"
-    },
-    {
-      "id": 13,
-      "category": "action",
-      "prompt": "keep the person EXACTLY the same, dynamic action, hair blowing in wind, outdoor setting"
-    },
-    {
-      "id": 14,
-      "category": "leaning",
-      "prompt": "keep the person EXACTLY the same, leaning forward toward camera, engaged expression, professional"
-    },
-    {
-      "id": 15,
-      "category": "half_body",
-      "prompt": "keep the person EXACTLY the same, half-body shot, arms crossed, professional headshot style"
-    },
-    {
-      "id": 16,
-      "category": "thoughtful",
-      "prompt": "keep the person EXACTLY the same, chin resting on hand, thoughtful pose, soft window light"
-    },
-    {
-      "id": 17,
-      "category": "low_angle",
-      "prompt": "keep the person EXACTLY the same, low angle from below, looking down at viewer, powerful stance"
-    },
-    {
-      "id": 18,
-      "category": "high_angle",
-      "prompt": "keep the person EXACTLY the same, high angle from above, looking up at camera, softer expression"
-    },
-    {
-      "id": 19,
-      "category": "skeptical",
-      "prompt": "keep the person EXACTLY the same, head tilted right, skeptical expression, cool blue light"
-    }
+    {"id": 0, "category": "full_body_front", "prompt": "keep the person EXACTLY the same, full body shot, standing straight, front view, wearing {OUTFIT}, studio lighting, clean white background"},
+    {"id": 1, "category": "three_quarter_left", "prompt": "keep the person EXACTLY the same, turn head LEFT, three-quarter left profile, tight headshot, no hands, window light"},
+    {"id": 2, "category": "three_quarter_right", "prompt": "keep the person EXACTLY the same, turn head RIGHT, three-quarter right profile, tight headshot, no hands, even light"},
+    {"id": 3, "category": "profile_left", "prompt": "keep the person EXACTLY the same, pure LEFT side profile, head turned 90 degrees, tight headshot, no hands, clean bg"},
+    {"id": 4, "category": "profile_right", "prompt": "keep the person EXACTLY the same, pure RIGHT side profile, head turned 90 degrees, tight headshot, no hands, clean bg"},
+    {"id": 5, "category": "looking_up", "prompt": "keep the person EXACTLY the same, looking UP at ceiling, chin raised, tight headshot, no hands, dramatic low angle"},
+    {"id": 6, "category": "full_body_walking", "prompt": "keep the person EXACTLY the same, full body shot, walking forward, wearing {OUTFIT}, natural candid pose"},
+    {"id": 7, "category": "full_body_over_shoulder", "prompt": "keep the person EXACTLY the same, full body shot, looking back over shoulder, wearing {OUTFIT}, candid moment"},
+    {"id": 8, "category": "close_up", "prompt": "keep the person EXACTLY the same, extreme close-up on face, sharp focus on eyes, no hands"},
+    {"id": 9, "category": "full_body_relaxed", "prompt": "keep the person EXACTLY the same, full body shot, relaxed standing, casual pose, wearing {OUTFIT}, soft diffused light"},
+    {"id": 10, "category": "full_body_confident", "prompt": "keep the person EXACTLY the same, full body shot, confident stance, arms relaxed, wearing {OUTFIT}, soft studio lighting, clean neutral background"},
+    {"id": 11, "category": "smile", "prompt": "keep the person EXACTLY the same, slight smile, head tilted left, tight headshot, no hands, warm interior light"},
+    {"id": 12, "category": "speaking", "prompt": "keep the person EXACTLY the same, mouth slightly open animated, speaking expression, tight headshot, no hands"},
+    {"id": 13, "category": "full_body_action", "prompt": "keep the person EXACTLY the same, full body shot, dynamic action pose, energetic, wearing {OUTFIT}, studio lighting"},
+    {"id": 14, "category": "full_body_leaning", "prompt": "keep the person EXACTLY the same, full body shot, leaning against a wall, casual, wearing {OUTFIT}"},
+    {"id": 15, "category": "full_body_professional", "prompt": "keep the person EXACTLY the same, full body shot, professional standing pose, wearing {OUTFIT}, clean neutral background"},
+    {"id": 16, "category": "thoughtful", "prompt": "keep the person EXACTLY the same, thoughtful expression, chin slightly tucked, tight headshot, no hands, soft window light"},
+    {"id": 17, "category": "low_angle", "prompt": "keep the person EXACTLY the same, low angle from below, tight headshot, no hands"},
+    {"id": 18, "category": "high_angle", "prompt": "keep the person EXACTLY the same, high angle from above, tight headshot, no hands"},
+    {"id": 19, "category": "skeptical", "prompt": "keep the person EXACTLY the same, head tilted right, skeptical, tight headshot, no hands, studio lighting, neutral color balance"}
   ]
 }
