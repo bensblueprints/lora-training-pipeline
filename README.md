@@ -169,6 +169,47 @@ Each character gets **20 images**: **12 tight headshots** (neck-up) + **8 full-b
 
 ---
 
+## Full-Body Generation: Head-Proportion + Identity Fix (CRITICAL)
+
+FLUX Kontext **cannot** reliably generate a natural full-body from a face-only reference — the head size is dominated by the model's own prior, NOT the composite size. The composite face fraction controls **identity**, not head size.
+
+**Measured (ArcFace identity sim vs reference, on the 5060 Ti fp8 node):**
+
+| Composite | ArcFace identity | Head/body ratio | Verdict |
+|-----------|------------------|-----------------|---------|
+| 35% (original) | strong | 0.107–0.140 | head too big / variable |
+| 15% | **0.170** ❌ | 0.099 | face too small → loses identity |
+| **20%** | **0.687** ✅ | 0.101 | ✅ **sweet spot** |
+| 25% | 0.720 ✅ | 0.108 | slightly bigger head |
+
+**Locked config:** `FACE_FRAC = 0.20` composite + `832×1248` tall canvas (see `scripts/batch_fullbody_5060.py`). Below 20% the face is too small to carry identity (ArcFace < 0.3 = different person); above 25% the head grows. `guidance` 2.5 vs 4.0 made no meaningful difference.
+
+**How to measure identity/proportion correctly:** use `insightface` (ArcFace `buffalo_l`) — face bbox height ÷ image height for proportion (natural ≈ 0.08), and `normed_embedding` cosine similarity to the reference for identity. Do **NOT** use a skin-tone/column heuristic — it falsely reports "tiny head".
+
+**Two-stage alternative** (when reference-only full-body fails): train the LoRA on headshots (identity), then generate full-body *with the LoRA* + a "full body" prompt — no face reference to fight.
+
+---
+
+## ai-toolkit FLUX LoRA Training on 24GB (the OOM fix)
+
+`quantize: true` **alone OOMs** — it loads the full 23 GB bf16 transformer into VRAM *before* quantizing, peaking past 24 GB. Add **`low_vram: true`**:
+
+```yaml
+model:
+  name_or_path: "black-forest-labs/FLUX.1-dev"
+  is_flux: true
+  quantize: true
+  low_vram: true   # ← required on a 24 GB card
+```
+
+Result: ~12.6 GB VRAM after quantize (vs 23.55 GB OOM without it). Full working config in `config/nita_lora.yaml`.
+
+**FLUX.1-dev is license-gated** — needs a HF token at `~/.cache/huggingface/token` (accept the license first). Training setup on pop-os: `~/ai-toolkit/` venv, run `./venv/bin/python run.py config/nita_lora.yaml`.
+
+**Machine split (locked):** **3090 (24 GB) = LoRA training** (FLUX.1-dev base ~23 GB + optimizer states). **5060 Ti (16 GB) = fp8 generation** (Blackwell fp8 native, ~50 s/img at 832×1248, ~24 s at 1024²).
+
+---
+
 ## Phase 2: ArcFace Identity Verification
 
 Before training a LoRA, verify the generated images actually depict the same person.
@@ -380,6 +421,7 @@ lora-training-pipeline/
 │   └── architecture.svg                  # Pipeline architecture diagram
 ├── scripts/
 │   ├── batch_comfy.py                    # FLUX Kontext batch generator (ComfyUI fp8 — production)
+│   ├── batch_fullbody_5060.py            # 5060 Ti full-body orchestrator (20% composite fix)
 │   ├── qc_lora.py                        # Qwen2.5-VL artifact QC (hands/hair/face)
 │   ├── train_lora_krea2.py               # Krea 2 LoRA training orchestrator
 │   ├── arcface_verify.py                 # ArcFace identity verification gate
@@ -387,6 +429,7 @@ lora-training-pipeline/
 │   └── kontext_batch.py                  # DEPRECATED — old diffusers path (fails on Ampere)
 └── config/
     ├── prompts.json                      # 20 training pose prompts (12 headshots + 8 full-body)
+    ├── nita_lora.yaml                    # ai-toolkit FLUX config (low_vram: true)
     └── lora_config.toml                  # Kohya_ss training config
 ```
 
